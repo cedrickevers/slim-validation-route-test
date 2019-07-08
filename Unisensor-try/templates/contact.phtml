@@ -1,0 +1,115 @@
+<?php
+/*
+
+// initialisation des variables au cas où on accederait au script sans passer par le formulaire
+$nom            = isset($_POST["nom"]) ? $_POST["nom"]       : "";
+$prenom         = isset($_POST["prenom"]) ? $_POST["prenom"] : "";
+$email          = isset($_POST["email"]) ? $_POST["email"]   : "";
+$phone          = isset($_POST["phone"]) ? $_POST["phone"]        : "";
+$message        = isset($_POST["message"]) ? $_POST["message"]        : "";
+
+
+*/
+?>
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .empty-field{
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<?php
+
+
+// verification si tous les champs sont remplis
+// si au moins un des champs est manquant alors on affiche le message d'erreur
+/*
+if(empty($prenom) || empty($nom) || empty($email) || empty($phone) || empty($message) ) {
+    // initialisation des variables qui vont permettre de stocker la classe en cas de "non remplissage"
+    $empty_prenom      = "";
+
+    $empty_nom   = "";
+    $empty_email    = "";
+    $empty_phone    = "";
+    $empty_message  = "";
+*/
+    // on va tester les valeur manquante UNIQUEMENT dans le cas où le formulaire a déjà été posté
+    if(!empty($_POST)){
+        if(is_array($nom)){
+            $empty_nom = " class='empty-field'";
+            $msg_nom = '<span class="empty-field">'.$nom['notBlank'].'</span>';
+        }
+        if(is_array($prenom)){
+            $empty_prenom = " class='empty-field'";
+            $msg_prenom = '<span class="empty-field">'.$prenom['notBlank'].'</span>';
+        }
+        if(is_array($email)){
+            $empty_email = " class='empty-field'";
+            $msg_email = '<span class="empty-field">'.$email['email'].'</span>';
+        }
+        if(is_array($phone)){
+            $empty_phone = " class='empty-field'";
+            $msg_phone = '<span class="empty-field">'.$phone['phone'].'</span>';
+        }
+        if(is_array($message)){
+            $empty_message = " class='empty-field'";
+            $msg_message = '<span class="empty-field">'.$message['notBlank'].'</span>';
+        }
+
+    }
+//}
+//    au lancement de la page  $notshowform n'est pas encore défini donc le formulaire s'affiche.
+if(! isset($notshowform)) {
+    ?>
+
+    <form action="contact" method="post">
+
+
+        <p<?php echo $empty_nom ?>>
+            Nom <span class='empty-field'>*</span><br/><input type="text" name="nom" value=
+            "<?php echo (!is_array ($nom)) ? $nom : ""; ?>"/>
+            <!--
+            evite value =array
+            -->
+        <p><?php echo (!is_array ($msg_nom)) ? $msg_nom : ""; ?></p>
+        </p>
+        <p<?php echo $empty_prenom; ?>>
+            Prenom<span class='empty-field'>*</span><br/><input type="text" name="prenom" value=
+            "<?php echo (!is_array ($prenom)) ? $prenom : ""; ?>"/>
+        <p><?php echo (!is_array ($msg_prenom)) ? $msg_prenom : ""; ?></p>
+        </p>
+        <p<?php echo $empty_email; ?>>
+            Email<span class='empty-field'>*</span><br/><input type="text" name="email" value=
+            "<?php echo (!is_array ($email)) ? $email : ""; ?>"/>
+        <p><?php echo (!is_array ($msg_email)) ? $msg_email : ""; ?></p>
+        </p>
+        <p<?php echo $empty_phone; ?>>
+            Phone<span class='empty-field'>*</span><br/><input type="text" name="phone" value=
+            "<?php echo (!is_array ($phone)) ? $phone : ""; ?>"/>
+        <p><?php echo (!is_array ($msg_phone)) ? $msg_phone : ""; ?></p>
+        </p>
+        </p>
+        <p<?php echo $empty_message; ?>>
+            Message <span class='empty-field'>*</span><br/><textarea name="message">
+                <?php echo (!is_array ($message)) ? $message : ""; ?></textarea>
+        <p><?php echo (!is_array ($msg_message)) ? $msg_message : ""; ?></p>
+        </p>
+
+        <p>
+            <input type="submit" name="submit" value="Send"/>
+        </p>
+    </form>
+    <?php
+} else {
+    echo '<h1> Sucess !!!!</h1>';
+}
+?>
+</body>
+</html>

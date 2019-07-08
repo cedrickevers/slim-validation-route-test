@@ -1,0 +1,229 @@
+
+
+
+
+
+
+function form($id, $action, $method, $content, $class = ""){
+$superglobale = strtoupper($method) == "POST" ? $_POST : $_GET;
+
+$show_form      = array();
+// le formulaire doit-il être affiché ?
+// si le formulaire n'a pas encore été soumis alors il faut l'afficher
+$show_form[]    = sizeof($superglobale) == 0 ? true : false;
+
+// initialisation des variables + construction du formulaire
+$msg            = "";
+$form           = "\n";
+$form_class     = !empty($class) ? " class=\"".$class."\"" : "";
+$form .= "<form action=\"".$action."\" method=\"".$method."\" id=\"".$id."\"".$form_class.">\n";
+
+    // boucle sur les différents éléments constituant le formulaire mise er forme (html) et champs
+    foreach($content as $c){
+    if(isset($c["html"])){
+    $form .= $c["html"]."\n";
+    }else{
+    $need       = isset($c["check"]) ? $c["check"] : true;
+    $info_msg   = isset($c["label"]) ? "<b>Erreur:</b> ".$c["label"]." est manquant" : "Information manquante";
+    $info_msg   = isset($c["error"]) && !empty($c["error"]) ? "<b>Attention:</b> ".$c["error"] : $info_msg;
+    $class_msg  = isset($c["error"]) && !empty($c["error"]) ? "warning" : "error";
+    $form      .= $c["input"].((!$need && !empty($superglobale)) ? "\t<p class=\"missingfield ".$class_msg."\"> ".$info_msg."</p>" : "");
+    $form .= "\t</div>\n";
+    $show_form[] = isset($c["check"]) && $c["check"] == false ? true : false;
+    }
+    }
+
+    $form .= "</form>\n";
+
+// si au moins un true est trouvé dans le array show_form : création d'un message d'erreur général
+$msg = in_array(true, $show_form) && sizeof($superglobale) > 0 ? "\t<p class=\"missingfield notice\"> <b>Attention:</b> Certains champs ont été oubliés ou sont mal remplis. Veuillez corriger.</p>" : "";
+// si au moins un true est trouvé dans le array show_form : ré-affichage du formulaire MAIS avec le message d'erreur
+// si aucun true alors return de false et soumission complète du form
+return in_array(true, $show_form) ? $msg.$form : false;
+}
+
+function addInput($label, $properties, $need = false, $div_class = ""){
+// vérification : le type est-il définit ? si non, text est attribué
+$type   = isset($properties["type"]) && !empty($properties["type"]) ? $properties["type"] : "text";
+// initialisation de la variable check
+$check  = true;
+// initialisation de la variable error
+$error  = "";
+// suppression des caractères spéciaux pour créer le nom de l'id à partir du label
+$id     = removeSpecialChar($label);
+
+// si la variable need passée en paramètre vaut true, vérification du contenu de la value du champ
+if($need){
+// si le champ est empty check vaudra false sinon check vaudra true
+$check  = isset($properties["value"]) && !empty($properties["value"]) ? true : false;
+}
+
+
+// pour certain type de champ, même si non obligatoire, ils doivent être correctes
+if($check){
+switch($type){
+case "password":
+$error = !empty($properties["value"]) && !is_good_password($properties["value"]) ? "le champ doit contenir au moins une lettre minuscule, une majuscule, un chiffre et un caractère spécial" : "";
+$check = !empty($error) ? false : true;
+break;
+case "email":
+$error = !empty($properties["value"]) && !is_mail($properties["value"]) ? "l'e-mail fourni n'est pas une adresse e-mail valide, vérifiez le format" : "";
+$check = !empty($error) ? false : true;
+break;
+case "url":
+$error = !empty($properties["value"]) && !is_url($properties["value"]) ? "l'url fournie n'est pas une url valide, vérifiez le format" : "";
+$check = !empty($error) ? false : true;
+break;
+case "number":
+$error = !empty($properties["value"]) && !is_number($properties["value"]) ? "la valeur fournie doit être un nombre" : "";
+$check = !empty($error) ? false : true;
+break;
+case "date":
+$error = !empty($properties["value"]) && !is_date($properties["value"], 'd/m/Y') ? "la date doit être au format JJ/MM/AAAA" : "";
+$check = !empty($error) ? false : true;
+break;
+case "time":
+$error = !empty($properties["value"]) && !is_date($properties["value"], 'H:i') ? "l'heure doit être au format HH:MM" : "";
+$check = !empty($error) ? false : true;
+break;
+case "datetime":
+$error = !empty($properties["value"]) && !is_date($properties["value"], 'd/m/Y H:i:s') ? "la date doit être au format JJ/MM/AAAA HH:MM:SS" : "";
+$check = !empty($error) ? false : true;
+break;
+}
+}
+
+// création du html de l'input en rapport avec les informations collectées
+$input = "\n";
+$input .= "\t<div".(!empty($div_class) ? " class=\"".$div_class."\"" : "").">\n";
+$input .= "\t\t<label for=\"".$id."\">\n";
+    // si la variable need vaut true alors affichage d'une * pour marquer le champ comme obligatoire
+    $input .= "\t\t\t".$label." ".($need ? "<span class=\"missingstar\">&#10036;</span>" : "")."\n";
+    $input .= "\t\t</label>\n";
+
+$s = "";
+// il faut boucler sur le tableau properties pour en extraire toutes les informations
+foreach($properties as $key => $value){
+$s .= " ".$key."=\"".$value."\"";
+}
+// définition de l'input et attribution des propriétés
+$input .= "\t\t<input id=\"".$id."\"".$s." />\n";
+// fin de la création de l'input
+
+// un tableau est retourné
+/*
+* input => code html généré
+* check => le champ est-il correctement rempli
+* label => label correspondant
+* error => une erreur doit-elle être affichée ?
+*
+*/
+return array("input" => $input, "check" => $check, "label" => $label, "error" => $error);
+}
+
+function addTextarea($label, $properties, $defaultValue, $need = false, $div_class = ""){
+$check  = true;
+$id     = removeSpecialChar($label);
+$js     = "";
+if($need){
+$check = !empty($defaultValue) ? true : false;
+}
+
+$input = "\n";
+$input .= "\t<div".(!empty($div_class) ? " class=\"".$div_class."\"" : "").">\n";
+$input .= "\t\t<label for=\"".$id."\">\n";
+    $input .= "\t\t\t".$label." ".($need ? "<span class=\"missingstar\">&#10036;</span>" : "")."\n";
+    $input .= "\t\t</label>\n";
+
+$s = "";
+foreach($properties as $key => $value){
+$s .= " ".$key."=\"".$value."\"";
+}
+
+$input .= "\t\t<textarea id=\"".$id."\"".$s.">".$defaultValue."</textarea>\n";
+
+return array("input" => $input, "check" => $check, "label" => $label);
+}
+
+function addSelect($label, $properties, $option, $defaultValue, $need = false, $div_class = ""){
+$check  = true;
+$id     = removeSpecialChar($label);
+if($need){
+$check = !empty($defaultValue) ? true : false;
+}
+$input = "\n";
+$input .= "\t<div".(!empty($div_class) ? " class=\"".$div_class."\"" : "").">\n";
+$input .= "\t\t<label for=\"".$id."\">\n";
+    $input .= "\t\t\t".$label." ".($need ? "<span class=\"missingstar\">&#10036;</span>" : "")."\n";
+    $input .= "\t\t</label>\n";
+
+$s = "";
+foreach($properties as $key => $value){
+$s .= " ".$key."=\"".$value."\"";
+}
+
+$input .= "\t\t<select id=\"".$id."\"".$s.">\n";
+    foreach($option as $key => $value){
+    $selected = ($defaultValue == $key) ? " selected=\"selected\"" : "";
+    $input .= "\t\t\t<option value=\"".$key."\"".$selected.">".$value."</option>\n";
+    }
+
+    $input .= "\t\t</select>\n";
+
+return array("input" => $input, "check" => $check, "label" => $label);
+}
+
+function addRadioCheckbox($label, $properties, $option, $defaultValue, $need = false, $type="checkbox", $div_class = ""){
+$check = true;
+if($need){
+$check = !empty($defaultValue) ? true : false;
+}
+
+$input = "\n";
+$input .= "\t<div".(!empty($div_class) ? " class=\"".$div_class."\"" : "").">\n";
+$input .= "\t\t<p><b>";
+        $input .= $label;
+        $input .= " ".($need ? "<span class=\"missingstar\">&#10036;</span>" : "");
+        $input .= "</b></p>\n";
+
+foreach($option as $key => $value){
+$id = strtolower(removeSpecialChar($label)."-".removeSpecialChar($value));
+$s = "";
+foreach($properties as $k => $v){
+$s .= " ".$k."=\"".$v."\"";
+}
+$input .= "\t\t<label for=\"".$id."\">\n";
+    if(is_array($defaultValue)){
+    $selected = in_array($key, $defaultValue) ? " checked=\"checked\"" : "";
+    }else{
+    $selected = ($defaultValue == $key) ? " checked=\"checked\"" : "";
+    }
+    $input .= "\t\t\t<input type=\"".$type."\"".$s." id=\"".$id."\" value=\"".$key."\"".$selected." />";
+    $input .= " ".$value."\n";
+    $input .= "\t\t</label>\n";
+
+}
+
+return array("input" => $input, "check" => $check, "label" => $label);
+}
+
+function addSubmit($properties, $balise){
+$input = "\n";
+
+$s = "";
+foreach($properties as $key => $value){
+$s .= " ".$key."=\"".$value."\"";
+}
+
+$input .= $balise;
+$input .= "\t<div".(!empty($div_class) ? " class=\"".$div_class."\"" : "").">\n";
+$input .= "\t\t<input type=\"submit\"".$s." />\n";
+
+return array("input" => $input, "check" => true);
+}
+
+function addLayout($content){
+return array("html" => $content, "check" => true);
+}
+
+?>
